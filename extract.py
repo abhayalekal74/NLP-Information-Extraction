@@ -113,6 +113,8 @@ def read_pdf(pdf_file):
         else: # Continue search
             read_direction_forward, forward_pointer, backward_pointer = update_pointers(read_direction_forward, forward_pointer, backward_pointer)
 
+    pdf_reader.close()
+
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
