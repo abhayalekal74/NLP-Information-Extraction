@@ -35,35 +35,76 @@ def is_rounding_section_in_page(page_content):
 
 
 def chunk(tags):
-    def parse_together_leaves(leaves):
-		
-        pass
 
-    def parse_separate_leaves(leaves):
-        pass
+    amount_types = []
+    currencies = []
+    roundings = ['nearest', 'nearest']
+    amount_values = []
 
-    grammar = ( 
-                '''
-                    TOGETHER: {<DT>?<NNP>{2}<.*>{0,10}<CC><.*>{0,10}<DT>?<NNP>{2}<.*>{0,5}?<VBN>(<RP>|<RB>)<.*>{0,2}(<RP>|<RB>)<.*>{0,10}<NNP>(<CD>(<,><NNP>)*)}
-                    SEPARATE: {<DT>?<NNP>{2}<.*>{0,10}?<VBN>(<RP>|<RB>)<.*>{0,10}?<NNP>(<CD>(<,><NNP>)*)}  
-                '''
-            )
+    def parse_together_match(words, tags):
+        # Check if Delivery and Return are present
+        try:
+            _del_word_index = words.index('Delivery')
+            _ret_word_index = words.index('Return')
+        except ValueError:
+            # False positive
+            return False
+
+        _del_data_index = 0 if _del_word_index < _ret_word_index else 1
+        _ret_data_index = (_del_data_index + 1) % 2
+
+        amount_types[_del_data_index] = 'Delivery Amount'
+        amount_types[_ret_data_index] = 'Return Amount'
+    
+        try:
+            # If index throws an error or the if condition fails, rounding info is not given
+            _vbn_index = tags.index('VBN') 
+            if _vbn_index < len(tags) - 1 and words[vbn_index + 1] in ['up', 'down']:
+                # Its given whether the values are rounded up or down
+                roundings[0] = words[vbn_index + 1]
+
+                # Check within the next 3 words if there's another rounding 
+                for i in range(_vbn_index + 2, min(len(words), _vbn_index + 5)):
+                    if words[i] in ['up', 'down']:
+                        roundings[1] = words[i]
+                        break
+                if roundings[1] == 'nearest': # For two amounts only one rounding is given, so it must be the same for both
+                    roundings[1] = roundings[0]
+        except ValueError:
+            pass
+
+        indices = [i for i, x in enumerate(tags) if x == 'CD']
+        currency_regex = re.compile(r'\b[A-Z]{3}\b') 
+        if len(indices) > 2:
+            
+
+    def parse_separate_match(words, tags):
+        print (words, tags)
+        if ('Delivery' in words or 'Return' in words) and 'Amount' in words:
+            pass
+
+    grammar = ('''
+               TOGETHER: {<DT>?<NNP>{2}<.*>{0,10}<CC><.*>{0,10}<DT>?<NNP>{2}<.*>{0,5}?(<VBN>(<RP>|<RB>)(<.*>{0,2}(<RP>|<RB>)?))?<.*>{0,10}<NNP><CD>(<.*>{0,4}?<NNP><CD>)?}
+               SEPARATE: {<DT>?<NNP>{2}<.*>{0,10}?(<VBN>(<RP>|<RB>))?<.*>{0,10}?<NNP><CD>(<.*>{0,4}?<NNP><CD>)?}  
+               ''')
     chunk_regex_parser = nltk.RegexpParser(grammar)
     parsed_tree = chunk_regex_parser.parse(tags)
     subtree_matches = parsed_tree.subtrees(filter=lambda x: x.label() in ['TOGETHER', 'SEPARATE'])
+
     for match in subtree_matches:
-        print (match.label(), match.leaves())
         # In case there are false positive matches for TOGETHER or SEPARATE, handle them by checking for Delivery and Return amount in particular
         words, tags = [], []
         for l in match.leaves():
             words.append(l[0])
             tags.append(l[1])
+
         if match.label() == 'TOGETHER':
-            data_found = parse_together_leaves(match.leaves()) # Once the data is found, its safe to break from the loop
+            data_found = parse_together_match(words, tags) # Once the data is found, its safe to break from the loop
             if data_found:
                 break
         else:
-            parse_separate_leaves(match.leaves()) # Delivery and Return amounts are separate, so letting the loop run for all subtrees
+            parse_separate_match(words, tags) # Delivery and Return amounts are separate, so letting the loop run for all subtrees
+
 
 def pos_tag(pages):
     page_contents = '\n'.join(pages)
