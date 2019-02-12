@@ -37,38 +37,39 @@ def is_rounding_section_in_page(page_content):
 def chunk(tags):
     grammar = ( 
                 '''
-                    TOGETHER: {<VBG>.*?<DT>?<NNP>{2}.*?<CC><DT>?<NNP>{2}.*?<VBN>(<RP>|<RB>).*?(<RP>|<RB>).*?<NNP>(<CD>(<,><NNP>)*)},
-                    SEPARATE: {<DT>?<NNP>{2}.*?<VBN>(<RP>|<RB>).*?<NNP>(<CD>(<,><NNP>)*)}  
+                    TOGETHER: {<VBG><.*>*?<DT>?<NNP>{2}<.*>*?<CC><DT>?<NNP>{2}<.*>*?<VBN>(<RP>|<RB>)<.*>*?(<RP>|<RB>)<.*>*?<NNP>(<CD>(<,><NNP>)*)}
+                    SEPARATE: {<DT>?<NNP>{2}<.*>*?<VBN>(<RP>|<RB>)<.*>*?<NNP>(<CD>(<,><NNP>)*)}  
                 '''
             )
     chunk_regex_parser = nltk.RegexpParser(grammar)
     parsed_tree = chunk_regex_parser.parse(tags)
     for subtree in parsed_tree.subtrees():
-        print (subtree)
+        print (type(subtree))
 
 
 def pos_tag(pages):
     page_contents = '\n'.join(pages)
     tags = nltk.pos_tag(nltk.word_tokenize(page_contents))    
-    print ('\n'.join(tags))
     chunk(tags)
 
 
 def get_page_text(pdf_reader, page_num):
     page = pdf_reader.getPage(page_num)
-    page_content = page.extractText()
+    page_content = str(page.extractText())
     return page_content
 
 
 def read_pdf(pdf_file):
-    from PyPDF2 import PdfFileReader
+    from tika import parser
     
     try:
-        pdf_reader = PdfFileReader(open(pdf_file, 'rb'), strict=False)
+        file_content = parser.from_file(pdf_file)['content']
     except FileNotFoundError:
         sys.exit('File not found, please pass a valid path')
+
+    pagewise_content = [page_content for page_content in file_content.split('\n\n\n\n') if len(page_content) > 0]
     
-    num_pages = pdf_reader.getNumPages()
+    num_pages = len(pagewise_content)
     print (num_pages)
 
     def update_pointers(dir_flag, fwd_ptr, back_ptr):
@@ -93,13 +94,12 @@ def read_pdf(pdf_file):
     while(forward_pointer < num_pages or backward_pointer >= 0):
         pointer = forward_pointer if read_direction_forward else backward_pointer # Search a page forward and backward around q3
         print ("Checking page", pointer)
-        cur_page_content = get_page_text(pdf_reader, pointer) 
-        print ("cur_page_content", cur_page_content.encode('ascii', 'ignore'))
+        cur_page_content = pagewise_content[pointer] 
         rounding_section_present, continued_in_next_page = is_rounding_section_in_page(cur_page_content)
         if rounding_section_present: # If rounding section is found, POS tag page
             if continued_in_next_page: # In case rounding section is continued in next page
                 # Make sure this indeed is the rounding section and not just the word "rounding"
-                next_page_content = get_page_text(pdf_reader, pointer + 1) 
+                next_page_content = pagewise_content[pointer + 1] 
                 if verify_rounding_section_present(cur_page_content, next_page_content):
                     pos_tag([cur_page_content, next_page_content])
                     break # Break the loop because the rounding section has been found
@@ -111,7 +111,6 @@ def read_pdf(pdf_file):
         else: # Continue search
             read_direction_forward, forward_pointer, backward_pointer = update_pointers(read_direction_forward, forward_pointer, backward_pointer)
 
-    pdf_reader.close()
 
 
 if __name__ == '__main__':
