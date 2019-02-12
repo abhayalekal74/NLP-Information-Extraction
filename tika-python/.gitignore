@@ -1,0 +1,11 @@
+/.project
+/.pydevproject
+/tika.egg-info
+/build
+/dist
+*.log
+/.settings/
+/tika/*.pyc
+/tika/*/*.pyc
+.DS_Store
+/setup.cfg
