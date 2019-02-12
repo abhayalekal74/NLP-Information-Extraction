@@ -43,19 +43,21 @@ def chunk(tags):
             )
     chunk_regex_parser = nltk.RegexpParser(grammar)
     parsed_tree = chunk_regex_parser.parse(tags)
-    for subtree in parsed_tree.subtrees(filter=lambda x: x.label() in ['TOGETHER', 'SEPARATE']):
-        print (subtree)
+    subtree_matches = parsed_tree.subtrees(filter=lambda x: x.label() in ['TOGETHER', 'SEPARATE'])
+    for match in subtree_matches:
+        print (match.label(), match.leaves())
+        # In case there are false positives, handle them by checking for Delivery and Return amount in particular
+		if match.label() == 'TOGETHER':
+            data_found = parse_together_leaves(match.leaves()) # Once the data is found, its safe to break from the loop
+            if data_found:
+                break
+        else:
+			parse_separate_leaves(match.leaves()) # Delivery and Return amounts are separate, so letting the loop run for all subtrees
 
 def pos_tag(pages):
     page_contents = '\n'.join(pages)
     tags = nltk.pos_tag(nltk.word_tokenize(page_contents))    
     chunk(tags)
-
-
-def get_page_text(pdf_reader, page_num):
-    page = pdf_reader.getPage(page_num)
-    page_content = str(page.extractText())
-    return page_content
 
 
 def read_pdf(pdf_file):
