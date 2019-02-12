@@ -1,4 +1,6 @@
 import re
+import nltk
+import sys
 
 
 def verify_rounding_section_present(cur_page, next_page):
@@ -52,7 +54,12 @@ def pos_tag(pages):
 
 def read_pdf(pdf_file):
     from PyPDF2 import PdfFileReader
-    pdf_reader = PdfFileReader(open(pdf_file, 'rb'))
+    
+    try:
+        pdf_reader = PdfFileReader(open(pdf_file, 'rb'))
+    except FileNotFoundError:
+        sys.exit('File not found, please pass a valid path')
+    
     num_pages = pdf_reader.num_pages
 
     def update_pointers(dir_flag, fwd_ptr, back_ptr):
@@ -95,8 +102,7 @@ def read_pdf(pdf_file):
 
 
 if __name__ == '__main__':
-    from sys import argv
-    if len(argv) >= 2:
-        read_pdf(argv[1])
+    if len(sys.argv) >= 2:
+        read_pdf(sys.argv[1])
     else:
         print ("Pass a PDF file to extract data from")
