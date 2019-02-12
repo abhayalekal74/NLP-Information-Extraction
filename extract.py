@@ -35,6 +35,13 @@ def is_rounding_section_in_page(page_content):
 
 
 def chunk(tags):
+    def parse_together_leaves(leaves):
+		
+        pass
+
+    def parse_separate_leaves(leaves):
+        pass
+
     grammar = ( 
                 '''
                     TOGETHER: {<DT>?<NNP>{2}<.*>{0,10}<CC><.*>{0,10}<DT>?<NNP>{2}<.*>{0,5}?<VBN>(<RP>|<RB>)<.*>{0,2}(<RP>|<RB>)<.*>{0,10}<NNP>(<CD>(<,><NNP>)*)}
@@ -46,13 +53,17 @@ def chunk(tags):
     subtree_matches = parsed_tree.subtrees(filter=lambda x: x.label() in ['TOGETHER', 'SEPARATE'])
     for match in subtree_matches:
         print (match.label(), match.leaves())
-        # In case there are false positives, handle them by checking for Delivery and Return amount in particular
-		if match.label() == 'TOGETHER':
+        # In case there are false positive matches for TOGETHER or SEPARATE, handle them by checking for Delivery and Return amount in particular
+        words, tags = [], []
+        for l in match.leaves():
+            words.append(l[0])
+            tags.append(l[1])
+        if match.label() == 'TOGETHER':
             data_found = parse_together_leaves(match.leaves()) # Once the data is found, its safe to break from the loop
             if data_found:
                 break
         else:
-			parse_separate_leaves(match.leaves()) # Delivery and Return amounts are separate, so letting the loop run for all subtrees
+            parse_separate_leaves(match.leaves()) # Delivery and Return amounts are separate, so letting the loop run for all subtrees
 
 def pos_tag(pages):
     page_contents = '\n'.join(pages)
