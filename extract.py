@@ -37,14 +37,15 @@ def is_rounding_section_in_page(page_content):
 def chunk(tags):
     grammar = ( 
                 '''
-                    TOGETHER: {<VBG><.*>*?<DT>?<NNP>{2}<.*>*?<CC><DT>?<NNP>{2}<.*>*?<VBN>(<RP>|<RB>)<.*>*?(<RP>|<RB>)<.*>*?<NNP>(<CD>(<,><NNP>)*)}
+                    TOGETHER: {<DT>?<NNP>{2}<.*>*?<CC><DT>?<NNP>{2}<.*>*?<VBN>(<RP>|<RB>)<.*>*?(<RP>|<RB>)<.*>*?<NNP>(<CD>(<,><NNP>)*)}
                     SEPARATE: {<DT>?<NNP>{2}<.*>*?<VBN>(<RP>|<RB>)<.*>*?<NNP>(<CD>(<,><NNP>)*)}  
                 '''
             )
     chunk_regex_parser = nltk.RegexpParser(grammar)
     parsed_tree = chunk_regex_parser.parse(tags)
+
     for subtree in parsed_tree.subtrees():
-        print (type(subtree))
+        print (subtree)
 
 
 def pos_tag(pages):
