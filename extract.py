@@ -6,15 +6,13 @@ import sys
 def verify_rounding_section_present(cur_page, next_page):
     # In the worst case, if cur_page contains only the "Rounding" word and the next_page contains the actual rounding section, both the pages will be POS tagged.
     # Not worrying about it for now
-    rounding_section_present, continued_in_next_page = is_rounding_section_in_page("\n".join([cur_page.extractText(), next_page.extractText()]))
+    rounding_section_present, continued_in_next_page = is_rounding_section_in_page("\n".join([cur_page, next_page]))
     if rounding_section_present and not continued_in_next_page: # These two pages have all the content
         return True
     return False
 
 
-def is_rounding_section_in_page(page):
-    page_content = page.extractText().encode('utf-16')
-    print (page_content)
+def is_rounding_section_in_page(page_content):
 
     # Case sensitive, not using regex because we are looking for an exact match
     _r = "Rounding" in page_content
@@ -50,7 +48,7 @@ def chunk(tags):
 
 
 def pos_tag(pages):
-    page_contents = '\n'.join([page.extractText() for page in pages])
+    page_contents = '\n'.join(pages)
     tags = nltk.pos_tag(nltk.word_tokenize(page_contents))    
     print ('\n'.join(tags))
     chunk(tags)
@@ -96,7 +94,7 @@ def read_pdf(pdf_file):
         pointer = forward_pointer if read_direction_forward else backward_pointer # Search a page forward and backward around q3
         print ("Checking page", pointer)
         cur_page_content = get_page_text(pdf_reader, pointer) 
-        print ("cur_page_content", cur_page_content.encode('utf-8'))
+        print ("cur_page_content", cur_page_content.encode('ascii', 'ignore'))
         rounding_section_present, continued_in_next_page = is_rounding_section_in_page(cur_page_content)
         if rounding_section_present: # If rounding section is found, POS tag page
             if continued_in_next_page: # In case rounding section is continued in next page
