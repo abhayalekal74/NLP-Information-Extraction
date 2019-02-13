@@ -138,8 +138,11 @@ def chunk(tags):
         else:
             parse_separate_match(words, tags) # Delivery and Return amounts are separate, so letting the loop run for all subtrees, check if delivery and return data is found and stop the loop. Skipping for now
         
-    for i in range(2):
-        print ("{}: Currency: {} Amount: {} Rounding: {}".format(amount_types[i], currencies[i], amount_values[i], roundings[i]))
+    if len(amount_types[0]) == 0:
+        print ("Could not extract the data, this maybe because of an issue with the data extracted by Tika or the rounding section is not present in the document")
+    else:        
+        for i in range(2):
+            print ("{}: Currency: {} Amount: {} Rounding: {}".format(amount_types[i], currencies[i], amount_values[i], roundings[i]))
 
 
 def pos_tag(pages):
